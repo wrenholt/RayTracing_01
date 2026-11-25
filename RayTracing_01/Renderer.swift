@@ -31,6 +31,7 @@ class Renderer: NSObject, MTKViewDelegate
 
     var projectionMatrix = matrix_float4x4()
     var time: Float = 0
+    let startInstant = ContinuousClock.now
     var viewportSize = SIMD2<Float>(1, 1)
 
     // ─── Init ───────────────────────────────
@@ -130,6 +131,15 @@ class Renderer: NSObject, MTKViewDelegate
             + uniformBufferOffset
         ).bindMemory(to: Uniforms.self, capacity: 1)
 
+        // Real elapsed time, independent of
+        // frame rate
+        let elapsed =
+            ContinuousClock.now - startInstant
+        let parts = elapsed.components
+        time = Float(
+            Double(parts.seconds)
+            + Double(parts.attoseconds) * 1e-18)
+
         // Camera orbits the scene
         let radius: Float = 8.0
         let speed: Float = 0.3
@@ -155,8 +165,6 @@ class Renderer: NSObject, MTKViewDelegate
         uniforms[0].time = time
         uniforms[0].inverseViewProjection = invVP
         uniforms[0].cameraPosition = eye
-
-        time += Float(1.0 / 60.0)
     }
 
     // ─── Draw ───────────────────────────────

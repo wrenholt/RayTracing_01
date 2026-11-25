@@ -204,7 +204,7 @@ fragment float4 conicFragment(VertexOut in [[stage_in]],
     //---------------------------------------------
     // Build ray from camera through pixel
     //---------------------------------------------
-    float2 res = uniforms.resolution;
+    // float2 res = uniforms.resolution;  // unused var
     float2 pixelNDC = in.uv;
     //---------------------------------------------
     // Map to clip space [-1, 1]
@@ -213,7 +213,7 @@ fragment float4 conicFragment(VertexOut in [[stage_in]],
     //---------------------------------------------
     // Flip Y for Metal's coordinate system
     //---------------------------------------------
-    clip.y = -clip.y;
+    //  clip.y = -clip.y; // redundant.
     //---------------------------------------------
     // Unproject near and far points
     //---------------------------------------------
@@ -238,7 +238,7 @@ fragment float4 conicFragment(VertexOut in [[stage_in]],
     float coneHalfAngle = 0.45; // radians (~26°)
     float coneHeight = 2.5;
     float k_scene = tan(coneHalfAngle);
-    float k2_scene = k_scene * k_scene;
+    // float k2_scene = k_scene * k_scene; // unused var
 
     //---------------------------------------------
     // Transparent cyan cone
@@ -318,7 +318,7 @@ fragment float4 conicFragment(VertexOut in [[stage_in]],
             // Use the farther hit
             //-----------------------
             float tFar = max(t1, t2);
-            if (tFar > 0.001)
+            if (tFar > coneHit.t + 0.001)
             {
                 float3 p = o + tFar * d;
                 if (abs(p.y) <= coneHeight)
@@ -587,7 +587,7 @@ fragment float4 coneSphereFragment(VertexOut in [[stage_in]],
     // Build ray
     //---------------------------------------------
     float2 clip = in.uv * 2.0 - 1.0;
-    clip.y = -clip.y;
+    //  clip.y = -clip.y; // already flipped
 
     float4 nearClip = float4(clip, 0.0, 1.0);
     float4 farClip  = float4(clip, 1.0, 1.0);
@@ -669,6 +669,7 @@ fragment float4 coneSphereFragment(VertexOut in [[stage_in]],
 
     float cosA = cos(coneHalfAngle);
     float cos2 = cosA * cosA;
+    float sin2A = sin(2.0 * coneHalfAngle);
 
     float3 accum = float3(0.0);
     float alphaAccum = 0.0;
@@ -705,9 +706,12 @@ fragment float4 coneSphereFragment(VertexOut in [[stage_in]],
                 float coneVal = vDotA * vDotA - cos2 * dot(v, v);
                 //------------------------------
                 // Linearize by dividing by
-                // gradient magnitude (~2*|v|)
+                // gradient magnitude on the
+                // cone: 2|v|·sinα·cosα
+                //   = |v|·sin2α
                 //------------------------------
-                proximity = abs(coneVal) / (2.0 * length(v));
+                proximity = abs(coneVal)
+                / (length(v) * sin2A);
             }
             else
             {
